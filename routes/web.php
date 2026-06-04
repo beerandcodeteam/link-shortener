@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\LinkController;
 use App\Http\Controllers\RedirectController;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Dashboard;
+use App\Livewire\LinkDetail;
 use App\Livewire\Public\Shorten;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
@@ -41,6 +43,29 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
+    /*
+    |----------------------------------------------------------------------
+    | Link Management
+    |----------------------------------------------------------------------
+    |
+    | Routes for owning, inspecting, toggling and deleting a single link.
+    | Each one is gated by the {@see \App\Policies\LinkPolicy} so a user
+    | can never touch another user's link.
+    |
+    */
+
+    Route::get('/links/{link}', LinkDetail::class)
+        ->name('links.show')
+        ->middleware('can:view,link');
+
+    Route::post('/links/{link}/toggle', [LinkController::class, 'toggle'])
+        ->name('links.toggle')
+        ->middleware('can:update,link');
+
+    Route::delete('/links/{link}', [LinkController::class, 'destroy'])
+        ->name('links.destroy')
+        ->middleware('can:delete,link');
+
     Route::post('/logout', LogoutController::class)->name('logout');
 });
 
@@ -62,9 +87,10 @@ if (app()->environment('local')) {
 |--------------------------------------------------------------------------
 |
 | This route is registered LAST so named application routes (e.g. /login,
-| /dashboard) take precedence. The "short_code" pattern is constrained to
-| the URL-safe character set used by the ShortCodeGenerator service, which
-| also overlaps with the reserved-words list, so app routes are safe.
+| /dashboard, /links/{link}) take precedence. The "short_code" pattern is
+| constrained to the URL-safe character set used by the ShortCodeGenerator
+| service, which also overlaps with the reserved-words list, so app routes
+| are safe.
 |
 */
 
