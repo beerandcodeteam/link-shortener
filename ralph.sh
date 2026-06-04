@@ -196,7 +196,7 @@ format_duration() {
 read_env() {
   local key="$1"
   [ -f .env ] || return 0
-  grep -E "^${key}=" .env | head -1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//'
+  grep -E "^${key}=" .env | head -1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//' || true
 }
 
 # Descobre o IP onde o Ollama esta acessivel a partir do WSL.
