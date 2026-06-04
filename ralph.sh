@@ -256,6 +256,17 @@ ensure_ccr() {
   fi
 }
 
+# Extrai o modelo do Router.default do config do CCR (ex: "ollama,qwen3.6:latest"
+# -> "qwen3.6:latest"). Usado so como label honesto no output do claude.
+read_ccr_model() {
+  local cfg="$HOME/.claude-code-router/config.json"
+  [ -f "$cfg" ] || return 0
+  grep -oE '"default"[[:space:]]*:[[:space:]]*"[^"]*"' "$cfg" \
+    | head -1 \
+    | sed -E 's/.*"([^"]*)"$/\1/' \
+    | sed -E 's/^[^,]*,//'
+}
+
 # Resolve endpoint, auth e modelo do provider escolhido. Falha cedo se faltar dep.
 configure_provider() {
   PROVIDER_BASE_URL=""
@@ -286,7 +297,12 @@ configure_provider() {
       ensure_ccr
       PROVIDER_BASE_URL="http://127.0.0.1:3456"
       PROVIDER_API_KEY="ccr" # CCR sem APIKEY ignora, mas o claude exige um token setado
-      # O modelo Ollama e controlado pelo Router em ~/.claude-code-router/config.json
+      # O modelo Ollama e controlado pelo Router em ~/.claude-code-router/config.json.
+      # CCR ignora o model recebido e usa Router.default, entao passar --model aqui e
+      # apenas cosmetico: faz o "session iniciada" mostrar o modelo real em vez de opus.
+      if [ -z "$PROVIDER_MODEL" ]; then
+        PROVIDER_MODEL="$(read_ccr_model)"
+      fi
       ;;
   esac
 }
