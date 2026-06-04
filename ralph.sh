@@ -65,6 +65,83 @@ success() { echo -e "${GREEN}[$(date '+%H:%M:%S')] $1${NC}"; }
 warn()    { echo -e "${YELLOW}[$(date '+%H:%M:%S')] $1${NC}"; }
 fail()    { echo -e "${RED}[$(date '+%H:%M:%S')] $1${NC}"; }
 
+# Le o stream-json do claude (uma linha JSON por evento) e converte em texto
+# legivel (texto, tool calls, thinking, resultados). Linhas nao-JSON passam
+# direto. Usado pra popular o log da fase com o trabalho intermediario.
+render_stream() {
+  python3 /dev/fd/3 3<<'PYEOF'
+import sys, json
+
+def summarize(inp):
+    if not isinstance(inp, dict):
+        return ""
+    for key in ("title", "slug", "name", "path", "file_path",
+                "command", "description", "url", "query", "prompt"):
+        v = inp.get(key)
+        if isinstance(v, str) and v.strip():
+            v = v.strip().splitlines()[0]
+            return v if len(v) <= 100 else v[:97] + "..."
+    return ""
+
+def render(ev):
+    t = ev.get("type")
+    out = []
+    if t == "system" and ev.get("subtype") == "init":
+        out.append(f"· session iniciada ({ev.get('model', '')}, "
+                   f"{len(ev.get('tools') or [])} tools)")
+    elif t == "assistant":
+        for b in ev.get("message", {}).get("content", []) or []:
+            bt = b.get("type")
+            if bt == "text":
+                txt = (b.get("text") or "").rstrip()
+                if txt:
+                    out.append(txt)
+            elif bt == "tool_use":
+                s = summarize(b.get("input"))
+                out.append(f"→ {b.get('name', '?')}" + (f" {s}" if s else ""))
+            elif bt == "thinking":
+                lines = (b.get("thinking") or "").strip().splitlines()
+                if lines:
+                    out.append(f"… {lines[0][:120]}")
+    elif t == "user":
+        for b in ev.get("message", {}).get("content", []) or []:
+            if b.get("type") != "tool_result":
+                continue
+            content = b.get("content")
+            if isinstance(content, list):
+                content = " ".join(
+                    c.get("text", "") for c in content
+                    if isinstance(c, dict) and c.get("type") == "text"
+                )
+            preview = ""
+            if isinstance(content, str) and content.strip():
+                first = content.strip().splitlines()[0]
+                preview = first if len(first) <= 120 else first[:117] + "..."
+            marker = "✗" if b.get("is_error") else "←"
+            out.append(f"{marker} {preview}")
+    elif t == "result":
+        if ev.get("is_error"):
+            out.append(f"✗ erro: {ev.get('result') or ev.get('error') or ''}")
+        cost = ev.get("total_cost_usd")
+        dur = ev.get("duration_ms")
+        if cost is not None and dur is not None:
+            out.append(f"· concluído em {dur / 1000:.1f}s · ${cost:.4f}")
+    return out
+
+for line in iter(sys.stdin.readline, ''):
+    line = line.rstrip("\n")
+    if not line:
+        continue
+    try:
+        ev = json.loads(line)
+    except json.JSONDecodeError:
+        print(line, flush=True)
+        continue
+    for rendered in render(ev):
+        print(rendered, flush=True)
+PYEOF
+}
+
 format_duration() {
   local total_seconds=$1
   local hours=$((total_seconds / 3600))
@@ -233,7 +310,7 @@ run_engine() {
   if [[ "$ENGINE" == "codex" ]]; then
     cat "$prompt_file" | codex exec --sandbox danger-full-access - 2>&1 | tee "$log_file"
   elif [[ "$ENGINE" == "claude" ]]; then
-    env -u CLAUDECODE claude --dangerously-skip-permissions -p "$(cat "$prompt_file")" --output-format text --verbose 2>&1 | tee "$log_file"
+    env -u CLAUDECODE claude --dangerously-skip-permissions -p "$(cat "$prompt_file")" --output-format stream-json --verbose 2>&1 | render_stream | tee "$log_file"
   fi
 }
 

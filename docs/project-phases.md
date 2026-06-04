@@ -20,7 +20,7 @@ Implementation plan broken into numbered phases and sub-phases. Each numbered it
 - [x] **0.3** Pest 4 installed and wired (`tests/Pest.php`, `phpunit.xml`).
 - [x] **0.4** Default framework migrations present (`users`, `cache`, `jobs`).
 - [x] **0.5** Default `User` model and `resources/views/layouts/app.blade.php` present (to be replaced/extended in later phases).
-- [ ] **0.6** Confirm PostgreSQL connection in `.env` (`DB_CONNECTION=pgsql`) and `php artisan migrate` runs clean.
+- [x] **0.6** Confirm PostgreSQL connection in `.env` (`DB_CONNECTION=pgsql`) and `php artisan migrate` runs clean.
 
 ---
 
