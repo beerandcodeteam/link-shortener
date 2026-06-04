@@ -7,21 +7,28 @@
 #
 # Uso:
 #   chmod +x ralph.sh
-#   ./ralph.sh [--engine codex|claude] [caminho-do-arquivo]
+#   ./ralph.sh [--engine codex|claude] [--provider anthropic|minimax|ollama] [--model NOME] [caminho-do-arquivo]
 #
 # Exemplos:
-#   ./ralph.sh                          # default: codex
-#   ./ralph.sh --engine claude          # usa Claude Code
-#   ./ralph.sh --engine codex docs/project-phases.md
+#   ./ralph.sh                                      # default: codex
+#   ./ralph.sh --engine claude                      # Claude Code (modelo padrao Anthropic)
+#   ./ralph.sh --engine claude --provider minimax   # Claude Code falando com MiniMax
+#   ./ralph.sh --engine claude --provider ollama    # Claude Code via claude-code-router -> Ollama local
+#   ./ralph.sh --engine claude --model claude-sonnet-4-6   # forca um modelo Anthropic
 #
 # Pre-requisitos:
 #   - Codex: npm install -g @openai/codex + OPENAI_API_KEY
 #   - Claude: npm install -g @anthropic-ai/claude-code + ANTHROPIC_API_KEY
+#   - MiniMax (--provider minimax): preencha MINIMAX_KEY no .env
+#   - Ollama (--provider ollama): npm install -g @musistudio/claude-code-router
+#       + Ollama acessivel (no Windows: OLLAMA_HOST=0.0.0.0; ver ~/.claude-code-router/config.json)
 #   - Estar na raiz do projeto Laravel (dentro de um repo git)
 
 set -euo pipefail
 
 ENGINE="codex"
+PROVIDER="anthropic"
+MODEL=""
 INPUT_FILE=""
 
 while [[ $# -gt 0 ]]; do
@@ -32,6 +39,22 @@ while [[ $# -gt 0 ]]; do
       ;;
     --engine=*)
       ENGINE="${1#*=}"
+      shift
+      ;;
+    --provider)
+      PROVIDER="$2"
+      shift 2
+      ;;
+    --provider=*)
+      PROVIDER="${1#*=}"
+      shift
+      ;;
+    --model)
+      MODEL="$2"
+      shift 2
+      ;;
+    --model=*)
+      MODEL="${1#*=}"
       shift
       ;;
     *)
@@ -47,6 +70,17 @@ if [[ "$ENGINE" != "codex" && "$ENGINE" != "claude" ]]; then
   echo "Engine invalida: $ENGINE. Use 'codex' ou 'claude'."
   exit 1
 fi
+
+if [[ "$PROVIDER" != "anthropic" && "$PROVIDER" != "minimax" && "$PROVIDER" != "ollama" ]]; then
+  echo "Provider invalido: $PROVIDER. Use 'anthropic', 'minimax' ou 'ollama'."
+  exit 1
+fi
+
+# Variaveis preenchidas por configure_provider() e consumidas por run_engine().
+PROVIDER_BASE_URL=""
+PROVIDER_AUTH_TOKEN=""
+PROVIDER_API_KEY=""
+PROVIDER_MODEL=""
 PHASES_DIR=".phases"
 LOG_DIR=".phases/logs"
 PROMPT_DIR=".phases/prompts"
@@ -157,6 +191,106 @@ format_duration() {
   fi
 }
 
+# Le uma unica chave do .env sem dar source no arquivo (evita expansao de ${...}
+# e quebra com valores contendo espacos). Remove aspas externas do valor.
+read_env() {
+  local key="$1"
+  [ -f .env ] || return 0
+  grep -E "^${key}=" .env | head -1 | cut -d'=' -f2- | sed -e 's/^"//' -e 's/"$//'
+}
+
+# Descobre o IP onde o Ollama esta acessivel a partir do WSL.
+# Tenta localhost (networking mirrored) e cai para o gateway padrao (NAT WSL2).
+detect_ollama_host() {
+  local port="${1:-11434}"
+  if curl -s --max-time 2 "http://localhost:${port}/api/tags" &> /dev/null; then
+    echo "localhost"
+    return 0
+  fi
+  local gw
+  gw="$(ip route show default 2>/dev/null | awk '/default/ {print $3; exit}')"
+  if [ -n "$gw" ] && curl -s --max-time 3 "http://${gw}:${port}/api/tags" &> /dev/null; then
+    echo "$gw"
+    return 0
+  fi
+  return 1
+}
+
+# Atualiza api_base_url do provider ollama no config do CCR com o IP correto do host.
+# Retorna 0 se o arquivo foi alterado (CCR precisa reiniciar).
+sync_ollama_host() {
+  local cfg="$HOME/.claude-code-router/config.json"
+  [ -f "$cfg" ] || return 1
+  local host
+  host="$(detect_ollama_host 11434)" || {
+    fail "Ollama inacessivel via localhost ou gateway WSL. Confira OLLAMA_HOST=0.0.0.0 no Windows."
+    exit 1
+  }
+  local new_url="http://${host}:11434/v1/chat/completions"
+  local cur_url
+  cur_url="$(grep -oE '"api_base_url"[[:space:]]*:[[:space:]]*"[^"]*"' "$cfg" | head -1 | sed -E 's/.*"([^"]*)"$/\1/')"
+  if [ "$cur_url" = "$new_url" ]; then
+    return 1
+  fi
+  log "Ajustando Ollama host no CCR: ${cur_url} -> ${new_url}"
+  sed -i -E "s#\"api_base_url\"[[:space:]]*:[[:space:]]*\"[^\"]*\"#\"api_base_url\": \"${new_url}\"#" "$cfg"
+  return 0
+}
+
+# Garante que o claude-code-router esteja instalado e rodando (usado pelo Ollama).
+ensure_ccr() {
+  if ! command -v ccr &> /dev/null; then
+    fail "claude-code-router (ccr) nao encontrado. Instale: npm install -g @musistudio/claude-code-router"
+    exit 1
+  fi
+  local config_changed=1
+  sync_ollama_host && config_changed=0
+  if ! ccr status 2>/dev/null | grep -qi "running"; then
+    log "Iniciando claude-code-router..."
+    ccr start &> /dev/null || true
+    sleep 2
+  elif [ "$config_changed" -eq 0 ]; then
+    log "Reiniciando claude-code-router para aplicar novo IP do Ollama..."
+    ccr restart &> /dev/null || { ccr stop &> /dev/null; ccr start &> /dev/null; }
+    sleep 2
+  fi
+}
+
+# Resolve endpoint, auth e modelo do provider escolhido. Falha cedo se faltar dep.
+configure_provider() {
+  PROVIDER_BASE_URL=""
+  PROVIDER_AUTH_TOKEN=""
+  PROVIDER_API_KEY=""
+  PROVIDER_MODEL="$MODEL"
+
+  case "$PROVIDER" in
+    anthropic)
+      : # usa endpoint e credenciais padrao do Claude Code
+      ;;
+    minimax)
+      local key
+      key="$(read_env MINIMAX_KEY)"
+      if [ -z "$key" ]; then
+        fail "MINIMAX_KEY vazio no .env. Preencha antes de usar --provider minimax."
+        exit 1
+      fi
+      PROVIDER_BASE_URL="$(read_env MINIMAX_BASE_URL)"
+      PROVIDER_BASE_URL="${PROVIDER_BASE_URL:-https://api.minimax.io/anthropic}"
+      PROVIDER_AUTH_TOKEN="$key"
+      if [ -z "$PROVIDER_MODEL" ]; then
+        PROVIDER_MODEL="$(read_env MINIMAX_MODEL)"
+        PROVIDER_MODEL="${PROVIDER_MODEL:-MiniMax-M2}"
+      fi
+      ;;
+    ollama)
+      ensure_ccr
+      PROVIDER_BASE_URL="http://127.0.0.1:3456"
+      PROVIDER_API_KEY="ccr" # CCR sem APIKEY ignora, mas o claude exige um token setado
+      # O modelo Ollama e controlado pelo Router em ~/.claude-code-router/config.json
+      ;;
+  esac
+}
+
 preflight_checks() {
   if [[ "$ENGINE" == "codex" ]]; then
     if ! command -v codex &> /dev/null; then
@@ -168,6 +302,7 @@ preflight_checks() {
       fail "Claude Code CLI nao encontrado. Instale com: npm install -g @anthropic-ai/claude-code"
       exit 1
     fi
+    configure_provider
   fi
 
   if [ ! -f "$INPUT_FILE" ]; then
@@ -187,7 +322,11 @@ preflight_checks() {
     exit 1
   fi
 
-  success "Pre-checks OK (engine: $ENGINE)"
+  if [[ "$ENGINE" == "claude" ]]; then
+    success "Pre-checks OK (engine: $ENGINE, provider: $PROVIDER${PROVIDER_MODEL:+, model: $PROVIDER_MODEL})"
+  else
+    success "Pre-checks OK (engine: $ENGINE)"
+  fi
 }
 
 split_phases() {
@@ -310,7 +449,23 @@ run_engine() {
   if [[ "$ENGINE" == "codex" ]]; then
     cat "$prompt_file" | codex exec --sandbox danger-full-access - 2>&1 | tee "$log_file"
   elif [[ "$ENGINE" == "claude" ]]; then
-    env -u CLAUDECODE claude --dangerously-skip-permissions -p "$(cat "$prompt_file")" --output-format stream-json --verbose 2>&1 | render_stream | tee "$log_file"
+    # Monta o env do claude conforme o provider. Tokens de provider sobrescrevem
+    # as credenciais herdadas, e cada modo de auth desliga o outro.
+    local -a claude_env=(-u CLAUDECODE)
+    if [ -n "$PROVIDER_AUTH_TOKEN" ]; then
+      claude_env+=(-u ANTHROPIC_API_KEY "ANTHROPIC_AUTH_TOKEN=$PROVIDER_AUTH_TOKEN")
+    fi
+    if [ -n "$PROVIDER_API_KEY" ]; then
+      claude_env+=(-u ANTHROPIC_AUTH_TOKEN "ANTHROPIC_API_KEY=$PROVIDER_API_KEY")
+    fi
+    if [ -n "$PROVIDER_BASE_URL" ]; then
+      claude_env+=("ANTHROPIC_BASE_URL=$PROVIDER_BASE_URL")
+    fi
+    local -a model_arg=()
+    if [ -n "$PROVIDER_MODEL" ]; then
+      model_arg=(--model "$PROVIDER_MODEL")
+    fi
+    env "${claude_env[@]}" claude --dangerously-skip-permissions "${model_arg[@]}" -p "$(cat "$prompt_file")" --output-format stream-json --verbose 2>&1 | render_stream | tee "$log_file"
   fi
 }
 
