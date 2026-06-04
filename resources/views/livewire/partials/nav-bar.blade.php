@@ -32,8 +32,7 @@
             </div>
         @else
             <div class="relative flex items-center gap-[14px]" x-data="{ open: false }" @click.outside="open = false">
-                <x-ui.button variant="primary" size="sm" :href="$url('dashboard', '/dashboard')">
-                    <x-slot:icon>plus</x-slot:icon>
+                <x-ui.button variant="primary" size="sm" :href="$url('dashboard', '/dashboard')" icon="plus">
                     New link
                 </x-ui.button>
 

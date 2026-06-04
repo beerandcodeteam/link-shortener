@@ -15,6 +15,8 @@
 #   ./ralph.sh --engine claude --provider minimax   # Claude Code falando com MiniMax
 #   ./ralph.sh --engine claude --provider ollama    # Claude Code via claude-code-router -> Ollama local
 #   ./ralph.sh --engine claude --model claude-sonnet-4-6   # forca um modelo Anthropic
+#   ./ralph.sh --from 3                             # comeca na fase 3 (re-roda dela em diante)
+#   ./ralph.sh --from phase-03-database            # comeca na fase pelo slug (match parcial)
 #
 # Pre-requisitos:
 #   - Codex: npm install -g @openai/codex + OPENAI_API_KEY
@@ -30,9 +32,18 @@ ENGINE="codex"
 PROVIDER="anthropic"
 MODEL=""
 INPUT_FILE=""
+FROM_PHASE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --from)
+      FROM_PHASE="$2"
+      shift 2
+      ;;
+    --from=*)
+      FROM_PHASE="${1#*=}"
+      shift
+      ;;
     --engine)
       ENGINE="$2"
       shift 2
@@ -557,21 +568,57 @@ is_phase_done() {
   [ -f "$PROGRESS_FILE" ] && grep -qF "$phase_file" "$PROGRESS_FILE"
 }
 
+# Resolve --from (numero ou slug parcial) para o numero da fase no manifest.
+# Sem --from, FROM_NUM=0 (roda tudo). Falha cedo se o alvo nao existir.
+FROM_NUM=0
+resolve_from_phase() {
+  [ -z "$FROM_PHASE" ] && return 0
+
+  if [[ "$FROM_PHASE" =~ ^[0-9]+$ ]]; then
+    FROM_NUM="$FROM_PHASE"
+    local total
+    total=$(wc -l < "$MANIFEST")
+    if [ "$FROM_NUM" -lt 1 ] || [ "$FROM_NUM" -gt "$total" ]; then
+      fail "--from $FROM_PHASE fora do intervalo (1..$total)"
+      exit 1
+    fi
+    return 0
+  fi
+
+  local n=0 file title
+  while IFS="|" read -r file title; do
+    n=$((n + 1))
+    if [[ "${file%.md}" == *"$FROM_PHASE"* ]]; then
+      FROM_NUM="$n"
+      return 0
+    fi
+  done < "$MANIFEST"
+
+  fail "Fase nao encontrada para --from: $FROM_PHASE"
+  exit 1
+}
+
 main() {
   preflight_checks
   split_phases
+  resolve_from_phase
 
   local total_phases
   total_phases=$(wc -l < "$MANIFEST")
 
   echo ""
   log "$total_phases fases para implementar"
+  if [ "$FROM_NUM" -gt 0 ]; then
+    log "Comecando a partir da fase $FROM_NUM (--from)"
+  fi
   echo ""
 
   local num=0
   while IFS="|" read -r file title; do
     num=$((num + 1))
-    if is_phase_done "$file"; then
+    if [ "$FROM_NUM" -gt 0 ] && [ "$num" -lt "$FROM_NUM" ]; then
+      echo -e "  ${BLUE}[$num] $title (pulada: antes de --from)${NC}"
+    elif is_phase_done "$file"; then
       echo -e "  ${GREEN}[$num] $title (ja completada)${NC}"
     else
       echo -e "  ${YELLOW}[$num] $title${NC}"
@@ -594,6 +641,12 @@ main() {
 
   while IFS="|" read -r file title; do
     current=$((current + 1))
+
+    if [ "$FROM_NUM" -gt 0 ] && [ "$current" -lt "$FROM_NUM" ]; then
+      log "Pulando $title (antes de --from $FROM_NUM)"
+      skipped_phases+=("$title")
+      continue
+    fi
 
     if is_phase_done "$file"; then
       log "Pulando $title (ja completada)"

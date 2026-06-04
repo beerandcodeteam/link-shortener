@@ -52,8 +52,13 @@ it('does not capture the /login app route', function () {
 it('does not capture the /dashboard app route', function () {
     $response = $this->get('/dashboard');
 
-    $captured = $response->isRedirect()
-        && str_starts_with((string) $response->headers->get('Location'), 'http');
+    // /dashboard is a named, auth-protected route. The catch-all short-link
+    // handler must not match it: a guest hit either returns the dashboard
+    // page or, when auth is enforced, a 302 to the login route on the same
+    // host (never a 302 to a user-supplied original URL).
+    expect($response->isRedirect())->toBeTrue();
 
-    expect($captured)->toBeFalse();
+    $location = (string) $response->headers->get('Location');
+
+    expect($location)->toEndWith('/login');
 });
