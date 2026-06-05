@@ -13,7 +13,9 @@
 #   ./ralph.sh                                      # default: codex
 #   ./ralph.sh --engine claude                      # Claude Code (modelo padrao Anthropic)
 #   ./ralph.sh --engine claude --provider minimax   # Claude Code falando com MiniMax
-#   ./ralph.sh --engine claude --provider ollama    # Claude Code via claude-code-router -> Ollama local
+#   ./ralph.sh --engine claude --provider ollama    # Claude Code via claude-code-router -> Ollama local (modelo do Router.default)
+#   ./ralph.sh --engine claude --provider ollama --model qwen3-coder:30b   # forca modelo Ollama
+#   ./ralph.sh --engine claude --provider ollama --model gemma4:12b        # testa outro modelo Ollama
 #   ./ralph.sh --engine claude --model claude-sonnet-4-6   # forca um modelo Anthropic
 #
 # Pre-requisitos:
@@ -237,6 +239,24 @@ sync_ollama_host() {
   return 0
 }
 
+# Reescreve todas as rotas do Router no config do CCR para usar o modelo dado.
+# CCR ignora o --model do claude e usa Router.default, entao trocar de modelo
+# Ollama exige reescrever o config. Retorna 0 se o arquivo foi alterado.
+sync_ollama_model() {
+  local model="$1"
+  [ -n "$model" ] || return 1
+  local cfg="$HOME/.claude-code-router/config.json"
+  [ -f "$cfg" ] || return 1
+  local cur
+  cur="$(read_ccr_model)"
+  if [ "$cur" = "$model" ]; then
+    return 1
+  fi
+  log "Trocando modelo Ollama no CCR: ${cur:-?} -> ${model}"
+  sed -i -E "s#\"(default|background|think|longContext|webSearch)\"[[:space:]]*:[[:space:]]*\"ollama,[^\"]*\"#\"\1\": \"ollama,${model}\"#g" "$cfg"
+  return 0
+}
+
 # Garante que o claude-code-router esteja instalado e rodando (usado pelo Ollama).
 ensure_ccr() {
   if ! command -v ccr &> /dev/null; then
@@ -245,6 +265,9 @@ ensure_ccr() {
   fi
   local config_changed=1
   sync_ollama_host && config_changed=0
+  if [ -n "$MODEL" ]; then
+    sync_ollama_model "$MODEL" && config_changed=0
+  fi
   if ! ccr status 2>/dev/null | grep -qi "running"; then
     log "Iniciando claude-code-router..."
     ccr start &> /dev/null || true
@@ -297,9 +320,9 @@ configure_provider() {
       ensure_ccr
       PROVIDER_BASE_URL="http://127.0.0.1:3456"
       PROVIDER_API_KEY="ccr" # CCR sem APIKEY ignora, mas o claude exige um token setado
-      # O modelo Ollama e controlado pelo Router em ~/.claude-code-router/config.json.
-      # CCR ignora o model recebido e usa Router.default, entao passar --model aqui e
-      # apenas cosmetico: faz o "session iniciada" mostrar o modelo real em vez de opus.
+      # CCR ignora o --model do claude e usa Router.default. Quando --model e passado,
+      # ensure_ccr() ja reescreveu o config (sync_ollama_model) pra esse modelo.
+      # Se nenhum --model foi dado, le o modelo atual do Router so como label honesto.
       if [ -z "$PROVIDER_MODEL" ]; then
         PROVIDER_MODEL="$(read_ccr_model)"
       fi
