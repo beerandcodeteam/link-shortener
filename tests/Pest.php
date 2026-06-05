@@ -20,6 +20,21 @@ pest()->extend(TestCase::class)
 
 /*
 |--------------------------------------------------------------------------
+| Browser Tests
+|--------------------------------------------------------------------------
+|
+| Browser tests live under `tests/Browser/` and use Playwright via
+| the Pest browser plugin. They share the same `TestCase` (and DB)
+| as feature tests so seeding/RefreshDatabase work uniformly.
+|
+*/
+
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->in('Browser');
+
+/*
+|--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------
 |

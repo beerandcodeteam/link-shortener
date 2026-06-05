@@ -82,4 +82,24 @@ return [
         'privacy',
         'r',
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limits
+    |--------------------------------------------------------------------------
+    |
+    | Per-IP limits (per minute) protecting the public surface from abuse:
+    |   - `shorten_per_minute`  cap on homepage shorten submissions.
+    |   - `redirect_per_minute` cap on short-link redirects.
+    |
+    | Both limits are evaluated per request IP. Authenticated users get the
+    | same cap; raise the values (or relax by user) only if abuse is
+    | genuinely a problem in production.
+    |
+    */
+
+    'rate_limit' => [
+        'shorten_per_minute' => (int) env('SHORTEN_RATE_LIMIT_PER_MINUTE', 10),
+        'redirect_per_minute' => (int) env('REDIRECT_RATE_LIMIT_PER_MINUTE', 60),
+    ],
 ];

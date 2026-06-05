@@ -29,7 +29,7 @@ class RedirectController extends Controller
         }
 
         if (! $link->is_active) {
-            return response()->view('link-unavailable', [
+            return response()->view('errors.link-unavailable', [
                 'link' => $link,
             ]);
         }

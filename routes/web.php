@@ -96,4 +96,5 @@ if (app()->environment('local')) {
 
 Route::get('/{shortCode}', RedirectController::class)
     ->where('shortCode', '[A-Za-z0-9_-]+')
+    ->middleware('throttle:shorten-redirect')
     ->name('short-links.redirect');
