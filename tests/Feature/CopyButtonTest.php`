@@ -1,0 +1,38 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
+
+class CopyButtonTest
+{
+    /**
+     * Test that the CopyButton component renders correctly.
+     */
+    public function test_it_renders_the_button(): void
+    {
+        $content = Blade::render('<x-copy-button value="https://example.com/link" />');
+
+        $this->assertStringContainsString('x-data', $content);
+        $this->assertStringContainsString('navigator.clipboard', $content);
+        $this->assertStringContainsString('Copied', $content);
+        $this->assertStringContainsString('Copy', $content);
+    }
+
+    /**
+     * Test that the button contains the correct logic for copying and showing 'Copied' state.
+     *
+     * NOTE: Since we are doing a Blade component, integration tests with Playwright/Pest Plugin
+     * would be ideal to test the actual clipboard interaction, but a standard feature test
+     * ensures the blade script is present.
+     */
+    public function test_it_has_proper_alpine_directives(): void
+    {
+        $content = Blade::render('<x-copy-button value="https://example.com/link" />');
+
+        // Checking for Alpine's click handler and selection of standard button classes
+        $this->assertStringContainsString('@click="copy()"', $content);
+        $this->assertStringContainsString('flex items-center', $content);
+    }
+}
