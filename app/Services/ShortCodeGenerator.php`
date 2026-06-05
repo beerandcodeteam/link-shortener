@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Service to generate unique, URL-safe short codes for the application.
+ *
+ * Ensures that generated codes do not contain ambiguous characters (e.g., '0', 'O', 'I')
+ * and are checked against the database to prevent collisions.
+ */
+class ShortCodeGenerator
+{
+    /**
+     * The allowed character set for short codes.
+     * Excludes ambiguous characters like 0, O, I, l.
+     */
+    private const ALLOWED_CHARS = 'abcdefghijkmnpqrstuvwxyz23456789';
+
+    /**
+     * The default length of the generated code.
+     */
+    public const DEFAULT_LENGTH = 6;
+
+    /**
+     * Generate a unique short code from the `links` table.
+     *
+     * @param int $length The length of the code to generate. Defaults to 6.
+     * @return string A valid, unique short code.
+     */
+    public function generate(int $length = self::DEFAULT_LENGTH): string
+    {
+        $length = max(3, $length); // Minimum acceptable length
+
+        do {
+            $code = $this->generateRandomCode($length);
+        } while ($this->is_taken_in_db($code));
+
+        return $code;
+    }
+
+    /**
+     * Generate a random string using the allowed character set.
+     *
+     * @param int $length
+     * @return string
+     */
+    private function generateRandomCode(int $length): string
+    {
+        $characters = self::ALLOWED_CHARS;
+        $code = '';
+        for ($i = 0; $i < $length; $i++) {
+            $code .= $characters[rand(0, strlen($characters) - 1)];
+        }
+        return $code;
+    }
+
+    /**
+     * Check if a code is already taken in the `links` table.
+     *
+     * @param string $code
+     * @return bool
+     */
+    private function is_taken_in_db(string $code): bool
+    {
+        // We use the DB facade directly to ensure we check the specific column
+        // even if the Link model or table doesn't have all its features yet.
+        return DB::table('links')
+            ->where('short_code', $code)
+            ->exists();
+    }
+}
