@@ -7,7 +7,7 @@
 #
 # Uso:
 #   chmod +x ralph.sh
-#   ./ralph.sh [--engine codex|claude] [--provider anthropic|minimax|ollama] [--model NOME] [caminho-do-arquivo]
+#   ./ralph.sh [--engine codex|claude] [--provider anthropic|minimax|ollama] [--model NOME] [--start-phase N] [caminho-do-arquivo]
 #
 # Exemplos:
 #   ./ralph.sh                                      # default: codex
@@ -17,6 +17,7 @@
 #   ./ralph.sh --engine claude --provider ollama --model qwen3-coder:30b   # forca modelo Ollama
 #   ./ralph.sh --engine claude --provider ollama --model gemma4:12b        # testa outro modelo Ollama
 #   ./ralph.sh --engine claude --model claude-sonnet-4-6   # forca um modelo Anthropic
+#   ./ralph.sh --start-phase 5                       # comeca a partir da fase 5 (pula 1-4)
 #
 # Pre-requisitos:
 #   - Codex: npm install -g @openai/codex + OPENAI_API_KEY
@@ -32,6 +33,7 @@ ENGINE="codex"
 PROVIDER="anthropic"
 MODEL=""
 INPUT_FILE=""
+START_PHASE=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -41,6 +43,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --engine=*)
       ENGINE="${1#*=}"
+      shift
+      ;;
+    --start-phase|--from)
+      START_PHASE="$2"
+      shift 2
+      ;;
+    --start-phase=*|--from=*)
+      START_PHASE="${1#*=}"
       shift
       ;;
     --provider)
@@ -75,6 +85,11 @@ fi
 
 if [[ "$PROVIDER" != "anthropic" && "$PROVIDER" != "minimax" && "$PROVIDER" != "ollama" ]]; then
   echo "Provider invalido: $PROVIDER. Use 'anthropic', 'minimax' ou 'ollama'."
+  exit 1
+fi
+
+if ! [[ "$START_PHASE" =~ ^[0-9]+$ ]] || [ "$START_PHASE" -lt 1 ]; then
+  echo "Start-phase invalida: $START_PHASE. Use um inteiro >= 1."
   exit 1
 fi
 
@@ -442,10 +457,7 @@ Para cada item:
 ## Regras obrigatorias
 - LEIA o CLAUDE.md antes de comecar — ele contem as convencoes do projeto
 - Todos os comandos devem usar ./vendor/bin/sail (Docker/Sail)
-- Factories devem criar todas as dependencias (role, user, product, etc.)
-- Nomes de classes, arquivos e metodos devem seguir EXATAMENTE o que esta descrito
-- Nao pule nenhum item marcado com [ ]
-- Ao final utilize o subagent de testes para validar se esta tudo correto
+- IMPORTANTE: Nao pule nenhum item marcado com [ ]
 
 ## Fase a implementar
 $(cat "$PHASES_DIR/$phase_file")
@@ -591,10 +603,16 @@ main() {
   log "$total_phases fases para implementar"
   echo ""
 
+  if [ "$START_PHASE" -gt 1 ]; then
+    log "Comecando a partir da fase $START_PHASE (fases 1-$((START_PHASE - 1)) serao puladas)"
+  fi
+
   local num=0
   while IFS="|" read -r file title; do
     num=$((num + 1))
-    if is_phase_done "$file"; then
+    if [ "$num" -lt "$START_PHASE" ]; then
+      echo -e "  ${BLUE}[$num] $title (pulada por --start-phase)${NC}"
+    elif is_phase_done "$file"; then
       echo -e "  ${GREEN}[$num] $title (ja completada)${NC}"
     else
       echo -e "  ${YELLOW}[$num] $title${NC}"
@@ -617,6 +635,12 @@ main() {
 
   while IFS="|" read -r file title; do
     current=$((current + 1))
+
+    if [ "$current" -lt "$START_PHASE" ]; then
+      log "Pulando $title (--start-phase $START_PHASE)"
+      skipped_phases+=("$title")
+      continue
+    fi
 
     if is_phase_done "$file"; then
       log "Pulando $title (ja completada)"
