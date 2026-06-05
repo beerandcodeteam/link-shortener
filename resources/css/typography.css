@@ -1,0 +1,32 @@
+# Typography Utility Definitions
+
+Add typography classes to the global CSS or tailwind configuration to match design specs.
+
+@layer base {
+  .display {
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.08; font-weight: 700; letter-spacing: -0.02em; }
+  .h2 { font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; }
+  .h3 { font-size: 19px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+
+  .body { font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+  .small { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--blue);
+    text-transform: none;
+  }
+
+  .mono {
+    font-family: "SF Mono", ui-monospace, "Menlo", monospace;
+    letter-spacing: -0.01em;
+  }
+}
