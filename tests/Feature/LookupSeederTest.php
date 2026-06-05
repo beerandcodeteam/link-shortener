@@ -43,7 +43,7 @@ class LookupSeederTest extends TestCase
         $this->assertEquals(5, \App\Models\Browser::count());
     }
 
-    protected function seed(): void
+    public function seed(): void
     {
         $this->artisan('db:seed');
     }

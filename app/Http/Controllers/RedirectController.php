@@ -23,15 +23,13 @@ class RedirectController extends Controller
             abort(404);
         }
 
-        if ($link->status === 'disabled') {
-            // Return a dedicated "link unavailable" page (not a redirect).
-            // This matches the requirement for 4.1.2
-            return view('errors.unavailable', ['shortCode' => $shortCode]);
+        if ($link->status->is_active) {
+            return redirect()->away($link->original_url, 302);
         }
 
-        // Active link -> 302 redirect to original_url
-        if ($link->original_url) {
-            return redirect()->away($link->original_url, 302);
+        // If the link doesn't exist or is not active, we check if it's disabled specifically.
+        if ($link && !$link->status->is_active) {
+            return view('errors.unavailable', ['shortCode' => $shortCode]);
         }
 
         abort(404);
