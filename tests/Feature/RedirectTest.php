@@ -41,10 +41,12 @@ it('shows the unavailable page (not a redirect) for a disabled short code', func
 });
 
 it('does not capture application routes with the catch-all', function () {
-    foreach (['/login', '/dashboard'] as $path) {
-        $response = $this->get($path);
+    // A real guest route resolves to the application, not the short-code catch-all page.
+    $this->get('/login')
+        ->assertOk()
+        ->assertDontSee('This link is unavailable', false);
 
-        expect($response->isRedirect())->toBeFalse();
-        expect($response->getStatusCode())->not->toBe(302);
-    }
+    // The protected route is handled by the auth middleware (redirect to login),
+    // which proves the application route — not the catch-all redirect — matched it.
+    $this->get('/dashboard')->assertRedirect(route('login'));
 });

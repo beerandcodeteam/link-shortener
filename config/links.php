@@ -59,6 +59,8 @@ return [
         'login',
         'register',
         'logout',
+        'forgot-password',
+        'reset-password',
         'dashboard',
         'links',
         'link',
