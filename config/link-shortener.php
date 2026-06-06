@@ -28,4 +28,33 @@ return [
 
     'short_code_charset' => env('SHORT_CODE_CHARSET', 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Reserved Short Codes
+    |--------------------------------------------------------------------------
+    |
+    | List of short codes that must never be generated. These typically
+    | map to application routes (login, register, dashboard, etc.) so they
+    | are not overridden by user-created links.
+    |
+    */
+
+    'reserved_words' => array_merge(
+        env('RESERVED_WORDS', '') !== ''
+            ? array_filter(explode(',', env('RESERVED_WORDS')))
+            : [],
+        [
+            'login',
+            'register',
+            'logout',
+            'dashboard',
+            'links',
+            'settings',
+            'profile',
+            'help',
+            'docs',
+            'api',
+        ],
+    ),
+
 ];
