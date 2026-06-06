@@ -128,31 +128,31 @@ Implementation plan broken into numbered phases and sub-phases. Each numbered it
 ## Phase 6: User Dashboard & Link Management
 
 ### Phase 6.1: Authorization Policy (US-6.1)
-- [ ] **6.1.1** `LinkPolicy` (`view`, `update`, `delete`) scoping to `user_id`; register policy; apply in all dashboard actions. Redirect route stays public (no policy).
+- [x] **6.1.1** `LinkPolicy` (`view`, `update`, `delete`) scoping to `user_id`; register policy; apply in all dashboard actions. Redirect route stays public (no policy).
   - **Tests:** `LinkPolicyTest` — owner passes view/update/delete; non-owner is denied (403/404); guest cannot reach dashboard actions.
 
 ### Phase 6.2: Link List (US-4.1)
-- [ ] **6.2.1** Livewire `Dashboard`/`LinkList` component — paginated list of **only** the current user's links showing original URL, short URL, click count, status badge, creation date; empty state.
+- [x] **6.2.1** Livewire `Dashboard`/`LinkList` component — paginated list of **only** the current user's links showing original URL, short URL, click count, status badge, creation date; empty state.
   - **Tests:** `LinkListTest` — renders only the authenticated user's links (excludes other users'); shows click count + status + dates; paginates beyond page size; empty state when none.
 
 ### Phase 6.3: Create From Dashboard (US-4.2)
-- [ ] **6.3.1** Create form (inline or modal) reusing Phase 3 validation + generator; new link appears in list immediately; success toast + copy action.
+- [x] **6.3.1** Create form (inline or modal) reusing Phase 3 validation + generator; new link appears in list immediately; success toast + copy action.
   - **Tests:** `DashboardCreateLinkTest` — valid submit creates link owned by user and it appears at top of list; auto-generates code when custom omitted; honors valid custom code; surfaces validation errors (duplicate/reserved/invalid URL) without creating.
 
 ### Phase 6.4: Copy Short Link (US-4.3)
-- [ ] **6.4.1** Wire the `CopyButton` to each list row + detail page copying the full short URL (with domain via `route()`/`get-absolute-url`).
+- [x] **6.4.1** Wire the `CopyButton` to each list row + detail page copying the full short URL (with domain via `route()`/`get-absolute-url`).
   - **Tests:** `CopyLinkTest` (feature-level) — the rendered short URL is the absolute URL for the code. (Clipboard UX is Alpine; assert the value/markup, not the browser clipboard.)
 
 ### Phase 6.5: Disable / Enable (US-4.4)
-- [ ] **6.5.1** Toggle action switching `link_status_id` between active/disabled, ownership-checked, list reflects new badge immediately.
+- [x] **6.5.1** Toggle action switching `link_status_id` between active/disabled, ownership-checked, list reflects new badge immediately.
   - **Tests:** `ToggleLinkStatusTest` — owner toggles active→disabled and back; disabled link then fails to redirect (integrates Phase 4.1); non-owner toggle denied; status change reflected in component state.
 
 ### Phase 6.6: Delete (US-4.5)
-- [ ] **6.6.1** Delete action behind a confirmation **Modal**, ownership-checked, hard delete; removed from list; short code then 404s.
+- [x] **6.6.1** Delete action behind a confirmation **Modal**, ownership-checked, hard delete; removed from list; short code then 404s.
   - **Tests:** `DeleteLinkTest` — owner deletes own link → removed from DB + list; deleted code subsequently returns 404 (integrates Phase 4.1); non-owner delete denied; confirmation required (no delete without confirm path).
 
 ### Phase 6.7: Link Detail & Click History (US-4.6, US-5.2 view)
-- [ ] **6.7.1** Livewire `LinkDetail` component — original URL, short URL, status, created date, total clicks, bar chart of clicks over time, and per-click log table (date/time, referrer, browser, device). Ownership-checked.
+- [x] **6.7.1** Livewire `LinkDetail` component — original URL, short URL, status, created date, total clicks, bar chart of clicks over time, and per-click log table (date/time, referrer, browser, device). Ownership-checked.
   - **Tests:** `LinkDetailTest` — owner sees detail with correct totals and click-log rows; non-owner/guest denied (403/404); click log lists entries tied to that link only; counts match `click_count`.
 
 ---
