@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class LinkStatus extends Model
 {
-    //
+    protected $fillable = ['name', 'slug'];
 }
