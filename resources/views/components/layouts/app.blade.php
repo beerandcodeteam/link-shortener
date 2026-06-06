@@ -17,5 +17,8 @@
         <main class="flex flex-1 w-full px-7 py-[28px] mx-auto max-w-[1080px]">
             {{ $slot }}
         </main>
+
+        {{-- Toast notification region (session flash) --}}
+        @include('components.toast')
     </body>
 </html>

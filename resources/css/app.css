@@ -79,3 +79,21 @@ body {
 
 .eyebrow  { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--color-blue); }
 .mono     { font-family: var(--font-mono); letter-spacing: -0.01em; }
+
+/* ============================================================
+   Toast — session flash notification (mirrors ui.jsx Toast)
+   ============================================================ */
+.toast-wrap    { position: fixed; bottom: 28px; left: 50%; z-index: 100; pointer-events: none; }
+.toast         { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; font-size: 14px; color: #fff; background: var(--color-ink); border-radius: 10px; box-shadow: var(--shadow-pop); white-space: nowrap; }
+.toast-icon    { flex: 0 0 auto; display: grid; place-items: center; width: 26px; height: 26px; }
+
+/* ============================================================
+   Button & form utilities
+   ============================================================ */
+.btn            { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; cursor: pointer; border: none; transition: opacity .15s ease, color .15s ease; }
+.btn-sm         { height: 32px; padding: 0 14px; border-radius: var(--radius-pill); }
+.btn-primary    { background: #0071e3; color: #fff; }
+.btn-primary:hover { background: #0058b0; }
+.btn-ghost      { background: transparent; color: var(--color-ink-2); }
+.btn-ghost:hover { color: var(--color-ink); }
+
