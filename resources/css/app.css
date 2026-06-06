@@ -55,4 +55,27 @@
 
     /* ---- layout ---- */
     --wrap-padding: 28px;
+
+    /* ---- typography: fonts ---- */
+    --font-mono: 'SF Mono', ui-monospace, 'Menlo', monospace;
 }
+/* ============================================================
+   Typography utilities — Apple-inspired
+   ============================================================ */
+
+/* Base body styles */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+}
+
+.display  { font-size: clamp(40px, 6vw, 72px); line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; }
+.h1       { font-size: clamp(30px, 4vw, 44px); line-height: 1.08; font-weight: 700; letter-spacing: -0.02em; }
+.h2       { font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; }
+.h3       { font-size: 19px;   line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; }
+.body             { font-size: 17px; line-height: 1.5; color: var(--color-ink-2); }
+.small            { font-size: 14px; line-height: 1.45; color: var(--color-ink-2); }
+
+.eyebrow  { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--color-blue); }
+.mono     { font-family: var(--font-mono); letter-spacing: -0.01em; }
