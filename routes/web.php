@@ -51,4 +51,5 @@ Route::middleware('auth')->group(function () {
 */
 Route::get('/{shortCode}', RedirectController::class)
     ->where('shortCode', '[A-Za-z0-9_-]+')
+    ->middleware('throttle:public-redirect')
     ->name('redirect');
