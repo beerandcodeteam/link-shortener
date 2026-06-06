@@ -19,6 +19,7 @@ class LinkFactory extends Factory
     public function definition(): array
     {
         return [
+            'user_id' => User::factory(),
             'original_url' => fake()->url(),
             'short_code' => fake()->unique()->lexify('??????'),
             'click_count' => 0,
