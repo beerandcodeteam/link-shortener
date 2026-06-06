@@ -60,9 +60,9 @@ it('generates unique codes across 100 iterations', function (): void {
     ]);
 
     DB::table('link_statuses')->insert([
-        'id' => 3,
-        'created_at' => now(),
-        'updated_at' => now(),
+        'id' => 3, 'slug' => 'active', 'name' => 'Active',
+        'description' => null, 'is_active' => true,
+        'created_at' => now(), 'updated_at' => now(),
     ]);
 
     $codes = [];
