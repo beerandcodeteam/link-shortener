@@ -57,4 +57,27 @@ return [
         ],
     ),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Max Original URL Length
+    |--------------------------------------------------------------------------
+    |
+    | Maximum allowed length for the original URL stored as a short link.
+    | URLs exceeding this limit are rejected at validation time. Default 2048.
+    |
+    */
+
+    'max_original_url_length' => (int) env('LINK_MAX_URL_LENGTH', 2048),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Max Custom Code Length
+    |--------------------------------------------------------------------------
+    |
+    | Maximum allowed length for a user-supplied custom short code. Defaults to 64.
+    |
+    */
+
+    'max_custom_code_length' => (int) env('LINK_MAX_CUSTOM_CODE_LENGTH', 64),
+
 ];
