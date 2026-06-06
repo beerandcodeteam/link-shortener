@@ -81,12 +81,12 @@ Implementation plan broken into numbered phases and sub-phases. Each numbered it
 ## Phase 3: Short Code Generation & URL Validation
 
 ### Phase 3.1: Short Code Generator Service (US-1.2)
-- [ ] **3.1.1** `ShortCodeGenerator` service — generates URL-safe random code (configurable length, no ambiguous chars), retries on collision against `links.short_code`.
+- [x] **3.1.1** `ShortCodeGenerator` service — generates URL-safe random code (configurable length, no ambiguous chars), retries on collision against `links.short_code`.
   - **Tests:** `ShortCodeGeneratorTest` (unit) — generated codes match the allowed charset and length; collision with an existing code triggers regeneration to a unique value; generation is unique across many iterations.
 
 ### Phase 3.2: URL & Custom Code Validation (US-1.3)
-- [ ] **3.2.1** Form Object / validation rules for link creation: `original_url` required, valid URL, `http`/`https` scheme only, max length; `custom_code` optional, allowed charset + length, unique in `links`, not a reserved word.
-- [ ] **3.2.2** Reserved-words list (e.g. `login`, `register`, `dashboard`, `links`) + a `ReservedShortCode` validation rule.
+- [x] **3.2.1** Form Object / validation rules for link creation: `original_url` required, valid URL, `http`/`https` scheme only, max length; `custom_code` optional, allowed charset + length, unique in `links`, not a reserved word.
+- [x] **3.2.2** Reserved-words list (e.g. `login`, `register`, `dashboard`, `links`) + a `ReservedShortCode` validation rule.
   - **Tests:** `LinkValidationTest` — rejects non-URL, rejects non-http(s) scheme, rejects over-long URL; accepts valid custom code; rejects duplicate custom code with a clear error; rejects reserved-word code; accepts empty custom code (auto-generate path).
 
 ---
