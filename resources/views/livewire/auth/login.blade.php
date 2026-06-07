@@ -27,14 +27,18 @@
             </div>
 
             {{-- Remember me --}}
-            <div class="flex items-center gap-2">
-                <input
-                    type="checkbox"
-                    wire:model.live="remember"
-                    id="remember"
-                    class="h-4 w-4 rounded border-line text-blue focus:ring-blue"
-                />
-                <label for="remember" class="text-sm text-ink-2">Remember me</label>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        wire:model.live="remember"
+                        id="remember"
+                        class="h-4 w-4 rounded border-line text-blue focus:ring-blue"
+                    />
+                    <label for="remember" class="text-sm text-ink-2">Remember me</label>
+                </div>
+
+                {{ link_to_route('password.request', 'Forgot password?', null, ['class' => 'text-sm text-blue']) }}
             </div>
 
             @error('email')
