@@ -15,7 +15,7 @@
 
         {{-- Centered content area --}}
         <div class="flex flex-1 items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow">
-            <main {{ $attributes }}>
+            <main>
                 {{ $slot }}
             </main>
         </div>
