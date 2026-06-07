@@ -164,7 +164,7 @@ Implementation plan broken into numbered phases and sub-phases. Each numbered it
 - [ ] **7.2** Rate-limit public homepage shorten + redirect endpoints (abuse protection).
   - **Tests:** `RateLimitTest` — excessive shorten submissions are throttled (429) after the configured limit.
 - [ ] **7.3** Pest **architecture tests** (`arch()`): models extend Eloquent base, no `dd`/`dump`/`ray` left, Livewire components in `app/Livewire`.
-- [ ] **7.4** Browser smoke test (Pest 4 browser) across home, auth, dashboard, detail for JS console errors.
+- [x] **7.4** Browser smoke test (Pest 4 browser) across home, auth, dashboard, detail for JS console errors.
 - [ ] **7.5** Final `vendor/bin/pint --dirty` pass + full `php artisan test` green.
 
 ---
