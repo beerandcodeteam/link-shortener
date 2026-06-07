@@ -1,10 +1,3 @@
-{{-- ============================================================
-    Component Gallery — dev-only route to eyeball every design
-    system component side by side with the Apple-inspired tokens.
-
-    No Livewire interactivity here; all previews are static.
-    ============================================================ --}}
-
 <x-layouts.gallery :title="'Component Gallery'">
     <div class="mx-auto max-w-5xl px-6 py-12">
 
@@ -199,74 +192,8 @@
         </section>
 
         {{-- ================== FAVICON & AVATAR =========== --}}
-        <section class="mb-16">
-            <h2 class="text-lg font-semibold text-[--ink-2] mb-5 pb-2 border-b border-[--line-soft]/50 dark:border-[#3E3E3A]">Chips &amp; Avatars</h2>
-            <div class="flex flex-col gap-6">
-
-                {{-- Favicon chips row --}}
-                <div>
-                    <p class="text-xs text-[--ink-3] mb-3 font-medium uppercase tracking-wider">Favicon Chips (deterministic hue)</p>
-                    <div class="flex items-center gap-4 flex-wrap">
-                        <x-favicon-chip host="github.com" :size="34" />
-                        <x-favicon-chip host="tailwindcss.com" :size="34" />
-                        <x-favicon-chip host="laravel.com" :size="34" />
-                        <x-favicon-chip host="developer.mozilla.org" :size="34" />
-                        <x-favicon-chip host="dribbble.com" :size="34" />
-                        <span class="text-sm px-2 py-1 rounded-full bg-[--bg-soft] text-xs font-medium border border-[--line-soft]">+ more</span>
-                    </div>
-                </div>
-
-                {{-- Inline chips --}}
-                <div>
-                    <p class="text-xs text-[--ink-3] mb-3 font-medium uppercase tracking-wider">Inline with text</p>
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg)] border border-[var(--line)] text-sm">
-                        <x-favicon-chip host="google.com" :size="20" :radius="6" />
-                        <span class="text-[--ink-2] truncate max-w-xs">https://google.com/search?q=laravel+design+system</span>
-                    </div>
-                </div>
-
-                {{-- Avatars --}}
-                <div class="pt-4">
-                    <p class="text-xs text-[--ink-3] mb-3 font-medium uppercase tracking-wider">Avatars (initials)</p>
-                    <div class="flex items-center gap-5 flex-wrap">
-                        <x-avatar name="Lucas Souza" />
-                        <x-avatar name="Anna Chen" :email="'anna@example.com'" />
-                        <x-avatar name="Bob Smith" :email="'bob@company.io'" logout="#" />
-                    </div>
-                </div>
-            </div>
-        </section>
 
         {{-- =================== OVERLAY ================ --}}
-        <section class="mb-16">
-            <h2 class="text-lg font-semibold text-[--ink-2] mb-5 pb-2 border-b border-[--line-soft]/50 dark:border-[#3E3E3A]">Overlay / Modal</h2>
-
-            {{-- Static preview of modal (open by default so we can see it) --}}
-            <div class="flex flex-col gap-6">
-                <p class="text-sm text-[--ink-3] mb-1">&mdash; rendered via &lt;x-modal /&gt; with `wire="close"`:</p>
-
-                <x-modal wire="close" width="480px">
-                    <div class="flex flex-col gap-4">
-                        <h3 class="text-lg font-semibold text-ink">Confirm deletion</h3>
-                        <p class="text-sm text-ink-2 leading-relaxed">Are you sure you want to delete this link? This action cannot be undone.</p>
-
-                        @php
-                            // Pre-set $attributes so the modal doesn't complain
-                            $attributes = new \Illuminate\View\ComponentAttributeBag([
-                                'class' => 'rounded-lg bg-white shadow-pop p-6',
-                            ]);
-                        @endphp
-                    </div>
-                </x-modal>
-
-                {{-- Copy buttons under modal --}}
-                <p class="text-sm text-[--ink-3] pb-1">&mdash; CopyButton (Alpine-based, shows "Copied!" state):</p>
-                <div class="flex items-center gap-4 flex-wrap">
-                    <x-copy-button value="https://snip.link/abc123" label="Copy link" />
-                    <x-copy-button value="https://example.com/original/path/to/resource" label="Long URL" />
-                </div>
-            </div>
-        </section>
 
         {{-- =================== FEEDBACK ================ --}}
         <section class="mb-16">
