@@ -23,7 +23,8 @@
             </thead>
             <tbody class="divide-y divide-line-soft">
                 @foreach ($links as $link)
-                    <tr class="hover:bg-[--bg-soft] transition-colors">
+                    <tr class="hover:bg-[--bg-soft] transition-colors"
+                        wire:key="link-{{ $link->id }}">
                         {{-- Original URL --}}
                         <td class="px-6 py-4">
                             <a href="{{ $link->original_url }}" target="_blank" rel="noopener noreferrer"
@@ -53,13 +54,21 @@
                             <x-status-badge :status="$link->linkStatus->slug ?? 'disabled'" />
                         </td>
 
-                        {{-- Toggle action --}}
+                        {{-- Toggle action + Delete --}}
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button wire:click="toggleStatus({{$link->id}})"
-                                    class="btn-soft btn-sm rounded font-medium leading-none text-ink-3 w-18"
-                                    title="{{ $link->isActive() ? 'Disable' : 'Enable' }}">
-                                {{ $link->isActive() ? 'Disable' : 'Enable' }}
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button wire:click="toggleStatus({{$link->id}})"
+                                        class="btn-soft btn-sm rounded font-medium leading-none text-ink-3"
+                                        title="{{ $link->isActive() ? 'Disable' : 'Enable' }}">
+                                    {{ $link->isActive() ? 'Disable' : 'Enable' }}
+                                </button>
+                                <button wire:click="confirmDelete({{$link->id}})"
+                                        class="btn-danger btn-sm rounded font-medium leading-none"
+                                        title="Delete"
+                                        wire:loading.attr="disabled">
+                                    {{ '&#xD7;'; }}
+                                </button>
+                            </div>
                         </td>
 
                         {{-- Date --}}
@@ -76,4 +85,25 @@
             {{ $links->onEachSide(1)->links() }}
         </div>
     </div>
+@endif
+
+{{-- Delete Confirmation Modal --}}
+@if($showDeleteModal && $deletingLinkId)
+    <x-modal wire="showDeleteModal" width="480px">
+        <div class="space-y-4">
+            <h3 class="text-lg font-medium text-ink">Delete link</h3>
+            <p class="text-sm text-ink-2">{{ __('Are you sure you want to delete this short link? This action cannot be undone.') }}</p>
+
+            <div class="flex gap-3 justify-end">
+                <button wire:click="cancelDelete"
+                        class="btn-soft btn-sm rounded font-medium">
+                    {{ __('Cancel') }}
+                </button>
+                <button wire:click="executeDelete"
+                        class="btn-danger btn-sm rounded font-medium">
+                    {{ __('Delete') }}
+                </button>
+            </div>
+        </div>
+    </x-modal>
 @endif
