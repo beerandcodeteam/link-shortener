@@ -17,6 +17,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">{{ __('Short URL') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">{{ __('Clicks') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">{{ __('Status') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">{{ __('Action') }}</th>
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-ink-3">{{ __('Created') }}</th>
                 </tr>
             </thead>
@@ -50,6 +51,15 @@
                         {{-- Status badge --}}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <x-status-badge :status="$link->linkStatus->slug ?? 'disabled'" />
+                        </td>
+
+                        {{-- Toggle action --}}
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button wire:click="toggleStatus({{$link->id}})"
+                                    class="btn-soft btn-sm rounded font-medium leading-none text-ink-3 w-18"
+                                    title="{{ $link->isActive() ? 'Disable' : 'Enable' }}">
+                                {{ $link->isActive() ? 'Disable' : 'Enable' }}
+                            </button>
                         </td>
 
                         {{-- Date --}}

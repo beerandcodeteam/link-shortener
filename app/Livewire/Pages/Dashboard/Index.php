@@ -55,6 +55,19 @@ class Index extends Component
         $this->customCode = null;
     }
 
+    /** Toggle a link's status between active and disabled. */
+    public function toggleStatus(\App\Models\Link $link): void
+    {
+        $this->authorize('update', $link);
+
+        $newSlug = $link->isActive() ? 'disabled' : 'active';
+        $targetId = \App\Models\LinkStatus::where('slug', $newSlug)->value('id');
+
+        if ($targetId) {
+            $link->update(['link_status_id' => $targetId]);
+        }
+    }
+
     public function render(): array
     {
         return ['title' => __('Dashboard')];

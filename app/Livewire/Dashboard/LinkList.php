@@ -2,7 +2,8 @@
 
 namespace App\Livewire\Dashboard;
 
-use Livewire\Attributes\Computed;
+use App\Models\Link;
+use App\Models\LinkStatus;
 use Livewire\Component;
 
 class LinkList extends Component
@@ -22,6 +23,16 @@ class LinkList extends Component
     public function hasLinks(): bool
     {
         return auth()->user()?->links()->exists() ?? false;
+    }
+
+    public function toggleStatus(Link $link): void
+    {
+        $this->authorize('update', $link);
+
+        $newSlug = $link->isActive() ? 'disabled' : 'active';
+        $targetStatus = LinkStatus::where('slug', $newSlug)->value('id');
+
+        $link->update(['link_status_id' => $targetStatus]);
     }
 
     public function render(): array
