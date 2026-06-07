@@ -10,6 +10,12 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+
+        // Auth routes (guest/auth middlewares)
+        then: function () {
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(__DIR__.'/../routes/auth.php');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
