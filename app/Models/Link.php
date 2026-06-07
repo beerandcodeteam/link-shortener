@@ -78,7 +78,7 @@ class Link extends Model
     protected function shortUrl(): Attribute
     {
         return Attribute::make(
-            get: fn () => route('shorten.show', $this->short_code),
+            get: fn () => url(route('shorten.show', $this->short_code, false)),
         );
     }
 
