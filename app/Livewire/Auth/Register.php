@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Auth;
 
+use App\Forms\LinkStoreFormObject;
+use App\Models\Link;
 use App\Models\User;
+use App\Services\ShortCodeGenerator;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -38,15 +40,42 @@ class Register extends Component
 
         Auth::login($user);
 
-        // Handle pending shorten payload from homepage before registration
-        $pending = session()->pull('pending_shorten');
-        if (is_array($pending) && filled($pending['original_url'] ?? null)) {
-            Session::put('pending_short_url', route('shorten.show', ['shortCode' => $pending['short_code']]));
-        }
+        // Complete pending shorten flow if any.
+        $this->completePendingShorten();
 
         session()->regenerate();
 
         $this->redirectIntended(route('dashboard', absolute: false), navigate: true);
+    }
+
+    /** Create a link from the stashed pending payload, if any. */
+    private function completePendingShorten(): void
+    {
+        $pending = session()->pull('pending_shorten');
+
+        if (! is_array($pending) || empty($pending['original_url'] ?? null)) {
+            return;
+        }
+
+        $form = new LinkStoreFormObject(
+            originalUrl: trim($pending['original_url']),
+            customCode: trim($pending['custom_code'] ?? '') ?: null,
+        );
+
+        if (! $form->isValid()) {
+            return;
+        }
+
+        $shortCode = filled($form->resolvedCode())
+            ? $form->resolvedCode()
+            : ShortCodeGenerator::generateUnique();
+
+        Link::create([
+            'user_id'        => auth()->id(),
+            'original_url'   => trim($pending['original_url']),
+            'short_code'     => $shortCode,
+            'link_status_id' => 1, // Active
+        ]);
     }
 
     public function render(): array
